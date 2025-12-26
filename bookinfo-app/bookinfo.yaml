@@ -330,6 +330,6 @@ spec:
         - name: tmp
           mountPath: /tmp
       volumes:
-      - name: tmp
-        emptyDir: {}
+      - name: result-storage
+      - 
 ---
