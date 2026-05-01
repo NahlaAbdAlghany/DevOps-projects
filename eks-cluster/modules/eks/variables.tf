@@ -1,7 +1,3 @@
-variable "vpc_id" {
-  description = "The VPC ID from the network module"
-  type        = string
-}
 
 variable "subnet_ids" {
   description = "The list of public subnet IDs"
@@ -19,3 +15,8 @@ variable "node_role_arn" {
   type        = string
 
 }
+
+variable "node_ssh_security_group_id" {
+  type = string
+}
+
