@@ -1,12 +1,13 @@
 locals {
   eks_addons = {
-    vpc_cni = {
-      version = "latest"
+    vpc-cni = {}
+    coredns = {}
+    kube-proxy = {}
+  }
+
+   eks_addons_with_irsa = {
+    aws-ebs-csi-driver = {
+      service_account_role_arn = aws_iam_role.ebs_csi_role.arn
     }
-    coredns = {
-      version = "latest"
-    }
-    kube_proxy = {}
-    ebs_csi = {}
   }
 }
