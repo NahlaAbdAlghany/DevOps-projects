@@ -1,14 +1,29 @@
 output "cluster_name" {
-  value = var.cluster_name
   description = "EKS cluster name"
+  value       = aws_eks_cluster.cluster.name
+}
+
+output "cluster_endpoint" {
+  description = "API server endpoint — use this to configure kubectl or other tools"
+  value       = aws_eks_cluster.cluster.endpoint
+}
+
+output "cluster_ca_certificate" {
+  description = "Base64-encoded certificate authority data — needed for kubectl kubeconfig"
+  value       = aws_eks_cluster.cluster.certificate_authority[0].data
+}
+
+output "oidc_provider_arn" {
+  description = "ARN of the OIDC provider — needed when creating IRSA roles for additional addons"
+  value       = aws_iam_openid_connect_provider.eks.arn
 }
 
 output "node_group_name" {
-  value = aws_eks_node_group.nodes.node_group_name
   description = "EKS node group name"
+  value       = aws_eks_node_group.nodes.node_group_name
 }
 
 output "node_group_arn" {
-  value = aws_eks_node_group.nodes.arn
   description = "EKS node group ARN"
+  value       = aws_eks_node_group.nodes.arn
 }

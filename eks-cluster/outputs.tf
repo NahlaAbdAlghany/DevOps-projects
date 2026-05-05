@@ -1,19 +1,35 @@
 output "vpc_id" {
+  description = "ID of the VPC"
   value       = module.vpc.vpc_id
-  description = "VPC ID created by the vpc module"
 }
 
 output "public_subnet_ids" {
+  description = "Public subnet IDs used by the EKS node group and load balancers"
   value       = module.vpc.public_subnet_ids
-  description = "Public subnet IDs from the vpc module"
 }
 
 output "eks_cluster_name" {
+  description = "EKS cluster name — use with: aws eks update-kubeconfig --name <value>"
   value       = module.eks.cluster_name
-  description = "EKS cluster name (from eks module)"
+}
+
+output "eks_cluster_endpoint" {
+  description = "EKS API server endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+output "eks_cluster_ca_certificate" {
+  description = "EKS cluster CA certificate (base64) — needed for kubeconfig"
+  value       = module.eks.cluster_ca_certificate
+  sensitive   = true # marked sensitive so it doesn't print in plain text during apply
+}
+
+output "oidc_provider_arn" {
+  description = "OIDC provider ARN — use this when creating IRSA roles for new addons"
+  value       = module.eks.oidc_provider_arn
 }
 
 output "eks_node_group_arn" {
+  description = "EKS node group ARN"
   value       = module.eks.node_group_arn
-  description = "EKS node group ARN (from eks module)"
 }
