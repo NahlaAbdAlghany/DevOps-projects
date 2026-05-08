@@ -39,13 +39,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Debug git remote
-        run: |
-          echo "Current remote:"
-          git remote -v
-          echo "Git config:"
-          git config --list | grep -E 'user|remote'
-
       # LESSON: github.sha is the full commit hash — using it as an image tag means
       # every commit produces a unique image that is traceable back to the source code
       - name: Build and push Docker image
@@ -71,5 +64,5 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add test-app/deployment.yaml
-          git diff --staged --quiet || git commit -m "ci: update image to ${{ github.sha }}"
+          git diff --staged --quiet || git commit -m "ci: update image to ${{ github.sha }} [skip ci]"
           git push
