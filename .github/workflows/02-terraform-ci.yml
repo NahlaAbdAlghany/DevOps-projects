@@ -51,14 +51,14 @@ jobs:
 
       # LESSON: redirect plan output to a file so we can read it reliably later
       # steps.plan.outputs.stdout is unreliable on self-hosted runners
+      # LESSON: use PowerShell redirection on Windows runners — 'tee' is not reliable
+      # $env:GITHUB_WORKSPACE gives the absolute path so both steps find the same file
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color 2>&1 | tee ../plan.txt
+        shell: pwsh
+        run: terraform plan -no-color *>&1 | Out-File -FilePath "$env:GITHUB_WORKSPACE\plan.txt" -Encoding utf8
         continue-on-error: true
-        shell: bash
 
-      # LESSON: read the file with Node.js fs module — more reliable than step outputs
-      # We use 'env:' to pass the outcome safely without string interpolation issues
       - name: Post Plan output to PR comment
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
@@ -66,8 +66,10 @@ jobs:
           PLAN_OUTCOME: ${{ steps.plan.outcome }}
         with:
           script: |
-            const fs = require('fs');
-            const plan = fs.readFileSync('plan.txt', 'utf8');
+            const fs   = require('fs');
+            const path = require('path');
+            const planPath = path.join(process.env.GITHUB_WORKSPACE, 'plan.txt');
+            const plan = fs.readFileSync(planPath, 'utf8');
             const body = [
               '### Terraform Plan',
               '```',
