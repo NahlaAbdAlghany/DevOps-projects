@@ -13,7 +13,10 @@ on:
 jobs:
   terraform-validate:
     runs-on: self-hosted
-    # LESSON: 'defaults' sets a working directory for all 'run' steps in this job
+    # LESSON: workflows need explicit permissions to write PR comments
+    permissions:
+      pull-requests: write
+      contents: read
     defaults:
       run:
         working-directory: eks-cluster
@@ -22,8 +25,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # LESSON: secrets are stored in GitHub repo Settings > Secrets and variables > Actions
-      # They are never printed in logs. Reference them with ${{ secrets.NAME }}
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -31,7 +32,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            us-west-2
 
-      # LESSON: each step has an 'id' — used to reference its outputs in later steps
+      # LESSON: setup-terraform wraps the terraform binary so that stdout/stderr
+      # are captured and exposed as step outputs (steps.X.outputs.stdout)
+      # Without this, steps.plan.outputs.stdout is always empty
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
       - name: Terraform Init
         id: init
         run: terraform init
