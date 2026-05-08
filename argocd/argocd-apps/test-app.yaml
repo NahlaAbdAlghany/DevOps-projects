@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: 'https://github.com/NahlaAbdAlghany/DevOps-projects.git'
-    targetRevision: eks-cluster
+    targetRevision: cicd-github-actions
     path: test-app
 
   destination:
