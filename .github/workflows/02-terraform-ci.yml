@@ -1,0 +1,80 @@
+name: 02 - Terraform CI
+
+# LESSON: 'paths' filter — only trigger when terraform files actually changed
+on:
+  pull_request:
+    branches: [cicd-github-actions]
+    paths:
+      - "eks-cluster/**"
+  workflow_dispatch:
+
+jobs:
+  terraform-validate:
+    runs-on: self-hosted
+    # LESSON: 'defaults' sets a working directory for all 'run' steps in this job
+    defaults:
+      run:
+        working-directory: eks-cluster
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # LESSON: secrets are stored in GitHub repo Settings > Secrets and variables > Actions
+      # They are never printed in logs. Reference them with ${{ secrets.NAME }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            us-west-2
+
+      # LESSON: each step has an 'id' — used to reference its outputs in later steps
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      # LESSON: fmt -check fails the step if any file isn't formatted — enforces code style
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+
+      # LESSON: validate checks syntax and internal consistency without calling AWS
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate
+
+      # LESSON: plan on a PR is safe — it only reads state and shows what WOULD change
+      # -no-color strips ANSI codes so the output is readable in PR comments
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color
+        continue-on-error: true   # keep going so we can post the output as a comment
+
+      # LESSON: github-script action lets you call the GitHub API with JavaScript
+      # Here we post the plan output directly as a PR comment for review
+      - name: Post Plan output to PR comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const plan = `${{ steps.plan.outputs.stdout }}` || '(no output)';
+            const body = [
+              '### Terraform Plan',
+              '```',
+              plan,
+              '```',
+              `**Status:** \`${{ steps.plan.outcome }}\``,
+              `**Triggered by:** @${{ github.actor }}`,
+            ].join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      # LESSON: fail the whole job AFTER posting the comment, if plan itself failed
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
