@@ -10,10 +10,6 @@ on:
 jobs:
   terraform-validate:
     runs-on: self-hosted
-    # LESSON: workflows need explicit permissions to write PR comments
-    permissions:
-      pull-requests: write
-      contents: read
     defaults:
       run:
         working-directory: eks-cluster
@@ -29,12 +25,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            us-west-2
 
-      # LESSON: setup-terraform wraps the terraform binary so that stdout/stderr
-      # are captured and exposed as step outputs (steps.X.outputs.stdout)
-      # Without this, steps.plan.outputs.stdout is always empty
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
       - name: Terraform Init
         id: init
         run: terraform init
@@ -49,43 +39,6 @@ jobs:
         id: validate
         run: terraform validate
 
-      # LESSON: redirect plan output to a file so we can read it reliably later
-      # steps.plan.outputs.stdout is unreliable on self-hosted runners
-      # LESSON: use PowerShell redirection on Windows runners — 'tee' is not reliable
-      # $env:GITHUB_WORKSPACE gives the absolute path so both steps find the same file
+      # LESSON: plan shows what WOULD change on AWS — output visible in Actions logs
       - name: Terraform Plan
-        id: plan
-        shell: pwsh
-        run: terraform plan -no-color *>&1 | Out-File -FilePath "$env:GITHUB_WORKSPACE\plan.txt" -Encoding utf8
-        continue-on-error: true
-
-      - name: Post Plan output to PR comment
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        env:
-          PLAN_OUTCOME: ${{ steps.plan.outcome }}
-        with:
-          script: |
-            const fs   = require('fs');
-            const path = require('path');
-            const planPath = path.join(process.env.GITHUB_WORKSPACE, 'plan.txt');
-            const plan = fs.readFileSync(planPath, 'utf8');
-            const body = [
-              '### Terraform Plan',
-              '```',
-              plan,
-              '```',
-              `**Status:** \`${process.env.PLAN_OUTCOME}\``,
-              `**Triggered by:** @${{ github.actor }}`,
-            ].join('\n');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
-
-      # LESSON: fail the whole job AFTER posting the comment, if plan itself failed
-      - name: Fail if plan failed
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
+        run: terraform plan -no-color
