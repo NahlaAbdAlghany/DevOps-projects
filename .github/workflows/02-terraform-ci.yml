@@ -4,6 +4,7 @@ name: 02 - Terraform CI
 on:
   pull_request:
     branches: [eks-cluster]   # fires when a PR targets eks-cluster (your base branch)
+
   workflow_dispatch:
 
 jobs:
@@ -48,27 +49,31 @@ jobs:
         id: validate
         run: terraform validate
 
-      # LESSON: plan on a PR is safe — it only reads state and shows what WOULD change
-      # -no-color strips ANSI codes so the output is readable in PR comments
+      # LESSON: redirect plan output to a file so we can read it reliably later
+      # steps.plan.outputs.stdout is unreliable on self-hosted runners
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color
-        continue-on-error: true   # keep going so we can post the output as a comment
+        run: terraform plan -no-color 2>&1 | tee ../plan.txt
+        continue-on-error: true
+        shell: bash
 
-      # LESSON: github-script action lets you call the GitHub API with JavaScript
-      # Here we post the plan output directly as a PR comment for review
+      # LESSON: read the file with Node.js fs module — more reliable than step outputs
+      # We use 'env:' to pass the outcome safely without string interpolation issues
       - name: Post Plan output to PR comment
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
+        env:
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
         with:
           script: |
-            const plan = `${{ steps.plan.outputs.stdout }}` || '(no output)';
+            const fs = require('fs');
+            const plan = fs.readFileSync('plan.txt', 'utf8');
             const body = [
               '### Terraform Plan',
               '```',
               plan,
               '```',
-              `**Status:** \`${{ steps.plan.outcome }}\``,
+              `**Status:** \`${process.env.PLAN_OUTCOME}\``,
               `**Triggered by:** @${{ github.actor }}`,
             ].join('\n');
             github.rest.issues.createComment({
