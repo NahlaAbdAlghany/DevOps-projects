@@ -2,11 +2,7 @@ name: 01 - Hello World
 
 # TRIGGER: when does this workflow run?
 on:
-  push:
-    branches: [cicd-github-actions]
-  pull_request:
-    branches: [cicd-github-actions]
-  workflow_dispatch:          # lets you run it manually from GitHub UI
+  workflow_dispatch:          # manual-only — run from GitHub Actions tab when needed
 
 # A workflow has one or more JOBS
 jobs:
