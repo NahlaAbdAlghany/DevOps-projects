@@ -3,10 +3,10 @@
 
 module "vpc" {
   source       = "./modules/vpc"
-  vpc_cidr     = var.vpc_cidr         # CIDR for the whole VPC
-  subnet_count = var.subnet_count     # how many public subnets (one per AZ)
-  ssh_cidr     = var.ssh_cidr         # who can SSH into worker nodes
-  cluster_name = var.cluster_name     # used for kubernetes.io/cluster/* subnet tags
+  vpc_cidr     = var.vpc_cidr     # CIDR for the whole VPC
+  subnet_count = var.subnet_count # how many public subnets (one per AZ)
+  ssh_cidr     = var.ssh_cidr     # who can SSH into worker nodes
+  cluster_name = var.cluster_name # used for kubernetes.io/cluster/* subnet tags
 }
 
 # ─── EKS Module ──────────────────────────────────────────────────────────────
