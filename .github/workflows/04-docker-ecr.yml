@@ -15,7 +15,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -49,12 +49,10 @@ jobs:
       # LESSON: after pushing the image, update the deployment manifest with the new tag
       # so ArgoCD detects the change and redeploys — this is the GitOps loop
       - name: Update deployment image tag
-        shell: pwsh
         run: |
-          $file = "test-app/deployment.yaml"
-          $newImage = "${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
-          (Get-Content $file) -replace 'image:.*', "image: $newImage" | Set-Content $file
-          Write-Host "Updated image to: $newImage"
+          NEW_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          sed -i "s|image:.*|image: $NEW_IMAGE|" test-app/deployment.yaml
+          echo "Updated image to: $NEW_IMAGE"
 
       - name: Commit updated deployment.yaml
         run: |
