@@ -1,0 +1,39 @@
+name: 03 - Terraform CD
+
+# LESSON: this runs AFTER a PR is merged — it applies the approved plan
+on:
+  push:
+    branches: [cicd-github-actions]
+    paths:
+      - "eks-cluster/**"
+  workflow_dispatch:
+
+jobs:
+  terraform-apply:
+    runs-on: self-hosted
+    defaults:
+      run:
+        working-directory: eks-cluster
+
+    # LESSON: 'environment' links to a GitHub Environment (Settings > Environments)
+    # You can add required reviewers there — someone must approve before apply runs
+    environment: testing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            us-west-2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        # LESSON: -auto-approve skips the interactive "yes" prompt
+        # Safe here because humans already reviewed the plan in the PR
+        run: terraform apply -auto-approve -no-color
