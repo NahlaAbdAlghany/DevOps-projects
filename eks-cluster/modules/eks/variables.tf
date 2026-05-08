@@ -25,7 +25,7 @@ variable "instance_type" {
 variable "desired_size" {
   description = "Initial number of worker nodes to launch"
   type        = number
-  default     = 3
+  default     = 2
 }
 
 variable "min_size" {
