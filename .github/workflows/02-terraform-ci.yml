@@ -4,6 +4,8 @@ name: 02 - Terraform CI
 on:
   pull_request:
     branches: [cicd-github-actions]
+  push:
+    branches: [cicd-github-actions]
     paths:
       - "eks-cluster/**"
   workflow_dispatch:
