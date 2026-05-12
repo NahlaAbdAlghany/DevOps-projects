@@ -95,3 +95,29 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_attach" {
   role       = aws_iam_role.ebs_csi_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
+
+# ─── cert-manager Role (DNS-01 via GCP Workload Identity Federation) ──────────
+# cert-manager's service account assumes this role via OIDC (IRSA).
+# The role itself needs no AWS permissions — its only purpose is to produce an
+# AWS STS token that cert-manager exchanges with GCP STS for a GCP access token,
+# which is then used to create DNS TXT records in GCP Cloud DNS.
+
+resource "aws_iam_role" "cert_manager_role" {
+  name = "cert-manager-dns01"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:cert-manager:cert-manager"
+        }
+      }
+    }]
+  })
+}

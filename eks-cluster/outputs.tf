@@ -33,3 +33,8 @@ output "eks_node_group_arn" {
   description = "EKS node group ARN"
   value       = module.eks.node_group_arn
 }
+
+output "cert_manager_role_arn" {
+  description = "IAM Role ARN for cert-manager — this is the STS ARN to share with GCP Workload Identity Federation"
+  value       = module.eks.cert_manager_role_arn
+}
