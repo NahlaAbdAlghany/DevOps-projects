@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: v1.14.5
+    helm:
+      values: |
+        installCRDs: true
+        featureGates: "ExperimentalGatewayAPISupport=true"
+
+        # IRSA: allows the cert-manager pod to obtain an AWS STS token,
+        # which is then exchanged for a GCP token via Workload Identity Federation
+        serviceAccount:
+          annotations:
+            eks.amazonaws.com/role-arn: arn:aws:iam::852405188872:role/cert-manager-dns01
+
+        # GCP credential config tells the GCP SDK how to exchange the AWS token
+        extraEnv:
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /var/secrets/gcp/config.json
+
+        extraVolumes:
+          - name: gcp-wif
+            secret:
+              secretName: gcp-wif-credentials
+
+        extraVolumeMounts:
+          - name: gcp-wif
+            mountPath: /var/secrets/gcp
+            readOnly: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
