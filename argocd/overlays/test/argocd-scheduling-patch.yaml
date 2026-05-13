@@ -74,21 +74,6 @@ spec:
           effect: NoSchedule
 ---
 apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: argocd-redis
-  namespace: argocd
-spec:
-  template:
-    spec:
-      nodeSelector:
-        role: argocd
-      tolerations:
-        - key: dedicated
-          value: argocd
-          effect: NoSchedule
----
-apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: argocd-application-controller
