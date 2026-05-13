@@ -51,19 +51,19 @@ variable "argocd_instance_type" {
 variable "argocd_desired_size" {
   description = "Desired number of ArgoCD nodes"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "argocd_min_size" {
   description = "Minimum number of ArgoCD nodes"
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "argocd_max_size" {
   description = "Maximum number of ArgoCD nodes"
   type        = number
-  default     = 2
+  default     = 5
 }
 
 # ─── Worker Node Group Sizing ─────────────────────────────────────────────────
