@@ -3,12 +3,14 @@ kind: Application
 metadata:
   name: envoy-gateway
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
   source:
-    repoURL: https://charts.envoyproxy.io
+    repoURL:  oci://docker.io/envoyproxy/gateway-helm
     chart: gateway-helm
-    targetRevision: v1.2.0
+    targetRevision: v1.6.2
   destination:
     server: https://kubernetes.default.svc
     namespace: envoy-gateway-system

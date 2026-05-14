@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: cert-manager
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
   source:
@@ -25,12 +27,12 @@ spec:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: /var/secrets/gcp/config.json
 
-        extraVolumes:
+        volumes:
           - name: gcp-wif
             secret:
               secretName: gcp-wif-credentials
 
-        extraVolumeMounts:
+        VolumeMounts:
           - name: gcp-wif
             mountPath: /var/secrets/gcp
             readOnly: true
