@@ -11,6 +11,6 @@ spec:
     solvers:
     - dns01:
         cloudDNS:
-          project: western-lambda-281506
+          project: poised-climate-496412-n2
           # No serviceAccountSecretRef — uses GOOGLE_APPLICATION_CREDENTIALS
           # injected via Workload Identity Federation (AWS IRSA → GCP token exchange)

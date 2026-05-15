@@ -11,4 +11,4 @@ spec:
     solvers:
     - dns01:
         cloudDNS:
-          project: western-lambda-281506
+          project: poised-climate-496412-n2
