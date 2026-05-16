@@ -26,13 +26,17 @@ spec:
         extraEnv:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: /var/secrets/gcp/config.json
+          - name: AWS_DEFAULT_REGION
+            value: us-west-2
+          - name: AWS_ROLE_NAME
+            value: cert-manager-dns01
 
         volumes:
           - name: gcp-wif
             secret:
               secretName: gcp-wif-credentials
 
-        VolumeMounts:
+        volumeMounts:
           - name: gcp-wif
             mountPath: /var/secrets/gcp
             readOnly: true
