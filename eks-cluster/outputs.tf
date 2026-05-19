@@ -24,11 +24,6 @@ output "eks_cluster_ca_certificate" {
   sensitive   = true # marked sensitive so it doesn't print in plain text during apply
 }
 
-output "oidc_provider_arn" {
-  description = "OIDC provider ARN — use this when creating IRSA roles for new addons"
-  value       = module.eks.oidc_provider_arn
-}
-
 output "eks_node_group_arn" {
   description = "EKS node group ARN"
   value       = module.eks.node_group_arn

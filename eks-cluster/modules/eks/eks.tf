@@ -41,31 +41,27 @@ resource "aws_eks_addon" "addons" {
   resolve_conflicts_on_update = "OVERWRITE"
 }
 
-# Addons that use IRSA (IAM Roles for Service Accounts) for fine-grained AWS permissions.
-# Each addon gets its own IAM role instead of relying on the broad node role.
-resource "aws_eks_addon" "irsa" {
-  for_each = local.eks_addons_with_irsa
+# ─── Pod Identity Associations ───────────────────────────────────────────────
+# Pod Identity replaces IRSA: the eks-pod-identity-agent DaemonSet intercepts
+# credential requests from pods and returns STS credentials for the associated
+# IAM role — no OIDC provider or token projection needed.
 
-  cluster_name             = aws_eks_cluster.cluster.name
-  addon_name               = each.key
-  service_account_role_arn = each.value.service_account_role_arn
+resource "aws_eks_pod_identity_association" "ebs_csi" {
+  cluster_name    = aws_eks_cluster.cluster.name
+  namespace       = "kube-system"
+  service_account = "ebs-csi-controller-sa"
+  role_arn        = aws_iam_role.ebs_csi_role.arn
+
+  depends_on = [aws_eks_addon.addons]
 }
 
-# ─── OIDC Provider ───────────────────────────────────────────────────────────
-# IRSA works by federating Kubernetes service accounts to IAM via OIDC.
-# This block sets up the OIDC identity provider so AWS IAM trusts tokens
-# issued by the EKS cluster's built-in OIDC endpoint.
+resource "aws_eks_pod_identity_association" "cert_manager" {
+  cluster_name    = aws_eks_cluster.cluster.name
+  namespace       = "cert-manager"
+  service_account = "cert-manager"
+  role_arn        = aws_iam_role.cert_manager_role.arn
 
-data "tls_certificate" "eks" {
-  # EKS exposes an OIDC issuer URL — we fetch its TLS cert thumbprint
-  # so AWS can verify the identity of the token issuer
-  url = aws_eks_cluster.cluster.identity[0].oidc[0].issuer
-}
-
-resource "aws_iam_openid_connect_provider" "eks" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
-  url             = aws_eks_cluster.cluster.identity[0].oidc[0].issuer
+  depends_on = [aws_eks_addon.addons]
 }
 
 

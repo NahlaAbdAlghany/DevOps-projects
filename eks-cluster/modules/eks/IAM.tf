@@ -65,27 +65,23 @@ resource "aws_iam_role_policy_attachment" "node_ecr_policy" {
 }
 
 # ─── EBS CSI Role ────────────────────────────────────────────────────────────
-# The EBS CSI driver uses IRSA (IAM Roles for Service Accounts) so only its
-# specific Kubernetes service account can assume this role — not the whole node.
-# This is more secure than attaching EBS permissions directly to the node role.
+# Pod Identity: the eks-pod-identity-agent assumes this role on behalf of the
+# ebs-csi-controller-sa service account. The association is defined in eks.tf.
 
 resource "aws_iam_role" "ebs_csi_role" {
   name = "AmazonEKS_EBS_CSI_Role"
 
-  # Trust policy: only the ebs-csi-controller-sa service account (via OIDC) can assume this
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Federated = aws_iam_openid_connect_provider.eks.arn
+        Service = "pods.eks.amazonaws.com"
       }
-      Action = "sts:AssumeRoleWithWebIdentity"
-      Condition = {
-        StringEquals = {
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:ebs-csi-controller-sa"
-        }
-      }
+      Action = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
     }]
   })
 }
@@ -97,10 +93,15 @@ resource "aws_iam_role_policy_attachment" "ebs_csi_attach" {
 }
 
 # ─── cert-manager Role (DNS-01 via GCP Workload Identity Federation) ──────────
-# cert-manager's service account assumes this role via OIDC (IRSA).
-# The role itself needs no AWS permissions — its only purpose is to produce an
-# AWS STS token that cert-manager exchanges with GCP STS for a GCP access token,
-# which is then used to create DNS TXT records in GCP Cloud DNS.
+# Pod Identity: the eks-pod-identity-agent assumes this role on behalf of the
+# cert-manager service account. The role has no AWS permissions — its sole purpose
+# is to produce an STS token that cert-manager exchanges with GCP STS for a GCP
+# access token, used to create DNS-01 TXT records in GCP Cloud DNS.
+# The association is defined in eks.tf.
+#
+# NOTE: remove AWS_ROLE_ARN / AWS_WEB_IDENTITY_TOKEN_FILE from the cert-manager
+# Helm/ArgoCD values — those are IRSA-specific. Pod Identity injects credentials
+# automatically via the agent; no env vars are needed.
 
 resource "aws_iam_role" "cert_manager_role" {
   name = "cert-manager-dns01"
@@ -110,14 +111,12 @@ resource "aws_iam_role" "cert_manager_role" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Federated = aws_iam_openid_connect_provider.eks.arn
+        Service = "pods.eks.amazonaws.com"
       }
-      Action = "sts:AssumeRoleWithWebIdentity"
-      Condition = {
-        StringEquals = {
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:cert-manager:cert-manager"
-        }
-      }
+      Action = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
     }]
   })
 }

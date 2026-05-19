@@ -16,20 +16,14 @@ spec:
         installCRDs: true
         featureGates: "ExperimentalGatewayAPISupport=true"
 
-        # IRSA: allows the cert-manager pod to obtain an AWS STS token,
-        # which is then exchanged for a GCP token via Workload Identity Federation
-        serviceAccount:
-          annotations:
-            eks.amazonaws.com/role-arn: arn:aws:iam::852405188872:role/cert-manager-dns01
-
+        # Pod Identity assigns the cert-manager-dns01 IAM role to this service account
+        # via aws_eks_pod_identity_association — no annotation needed here.
         # GCP credential config tells the GCP SDK how to exchange the AWS token
         extraEnv:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: /var/secrets/gcp/config.json
           - name: AWS_DEFAULT_REGION
             value: us-west-2
-          - name: AWS_ROLE_NAME
-            value: cert-manager-dns01
 
         volumes:
           - name: gcp-wif
