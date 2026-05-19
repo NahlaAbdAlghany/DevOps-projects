@@ -28,11 +28,45 @@ variable "ssh_cidr" {
 
 # ─── Node Group ──────────────────────────────────────────────────────────────
 
-variable "instance_type" {
-  description = "EC2 instance type for worker nodes"
+variable "capacity_type" {
+  description = "Capacity type for worker nodes: SPOT or ON_DEMAND"
+  type        = string
+  default     = "SPOT"
+}
+
+variable "instance_types" {
+  description = "EC2 instance types for worker nodes. Multiple types improve spot availability."
+  type        = list(string)
+  default     = ["t3.medium", "t3a.medium", "t2.medium"]
+}
+
+# ─── ArgoCD Node Group ───────────────────────────────────────────────────────
+
+variable "argocd_instance_type" {
+  description = "EC2 instance type for the ArgoCD-dedicated node group"
   type        = string
   default     = "t3.medium"
 }
+
+variable "argocd_desired_size" {
+  description = "Desired number of ArgoCD nodes"
+  type        = number
+  default     = 3
+}
+
+variable "argocd_min_size" {
+  description = "Minimum number of ArgoCD nodes"
+  type        = number
+  default     = 3
+}
+
+variable "argocd_max_size" {
+  description = "Maximum number of ArgoCD nodes"
+  type        = number
+  default     = 5
+}
+
+# ─── Worker Node Group Sizing ─────────────────────────────────────────────────
 
 variable "desired_size" {
   description = "Desired number of worker nodes"

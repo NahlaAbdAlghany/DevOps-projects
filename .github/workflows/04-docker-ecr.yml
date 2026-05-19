@@ -1,0 +1,68 @@
+name: 04 - Docker Build and Push to ECR
+
+# LESSON: only trigger when app code or Dockerfile changes
+on:
+  push:
+    branches: [cicd-github-actions]
+    paths:
+      - "test-app/**"
+  workflow_dispatch:
+
+env:
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com
+  ECR_REPOSITORY: myimages
+  AWS_REGION: us-west-2
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          #  Use a token with write permissions
+          token: ${{ secrets.TOKEN_GITHUB }}
+          # This allows pushing to protected branches if needed
+          persist-credentials: true
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      # LESSON: this action runs 'aws ecr get-login-password' and pipes it to 'docker login'
+      # so your runner is authenticated to push to ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # LESSON: github.sha is the full commit hash — using it as an image tag means
+      # every commit produces a unique image that is traceable back to the source code
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./test-app
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
+      # LESSON: after pushing the image, update the deployment manifest with the new tag
+      # so ArgoCD detects the change and redeploys — this is the GitOps loop
+      - name: Update deployment image tag
+        run: |
+          NEW_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+          sed -i "s|image:.*|image: $NEW_IMAGE|" test-app/deployment.yaml
+          echo "Updated image to: $NEW_IMAGE"
+
+      - name: Commit updated deployment.yaml
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add test-app/deployment.yaml
+          git diff --staged --quiet || git commit -m "ci: update image to ${{ github.sha }} [skip ci]"
+          git push

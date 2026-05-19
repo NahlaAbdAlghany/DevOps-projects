@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+spec:
+  template:
+    spec:
+      containers:
+      - name: argocd-server
+        command:
+        - /usr/local/bin/argocd-server
+        args:
+        - --insecure

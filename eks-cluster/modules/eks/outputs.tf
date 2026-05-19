@@ -18,6 +18,11 @@ output "oidc_provider_arn" {
   value       = aws_iam_openid_connect_provider.eks.arn
 }
 
+output "cert_manager_role_arn" {
+  description = "IAM Role ARN for cert-manager DNS-01 — share this with GCP as the trusted STS principal"
+  value       = aws_iam_role.cert_manager_role.arn
+}
+
 output "node_group_name" {
   description = "EKS node group name"
   value       = aws_eks_node_group.nodes.node_group_name

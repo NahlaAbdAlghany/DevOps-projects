@@ -4,8 +4,8 @@ kind: Kustomization
 namespace: argocd
 resources:
 - ../../base
-- ./files/loadbalancer-svc.yaml
-
 
 patchesStrategicMerge:
   - argocd-cm.yaml
+  - argocd-server-patch.yaml
+  - argocd-scheduling-patch.yaml

@@ -1,0 +1,29 @@
+name: 01 - Hello World
+
+# TRIGGER: when does this workflow run?
+on:
+  workflow_dispatch:          # manual-only — run from GitHub Actions tab when needed
+
+# A workflow has one or more JOBS
+jobs:
+  hello:
+    # self-hosted = your machine's runner
+    runs-on: self-hosted
+
+    # A job has one or more STEPS (run top to bottom)
+    steps:
+      - name: Print a greeting
+        run: echo "Hello from my self-hosted runner!"
+
+      - name: Show runner info
+        run: |
+          echo "OS: ${{ runner.os }}"
+          echo "Workspace: ${{ github.workspace }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Triggered by: ${{ github.event_name }}"
+
+      - name: Checkout the repo
+        uses: actions/checkout@v4   # 'uses' runs a pre-built action (from marketplace)
+
+      - name: List files in repo
+        run: ls ${{ github.workspace }}

@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: nahlat91@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-key
+    solvers:
+    - dns01:
+        cloudDNS:
+          project: poised-climate-496412-n2
+          # No serviceAccountSecretRef — uses GOOGLE_APPLICATION_CREDENTIALS
+          # injected via Workload Identity Federation (AWS IRSA → GCP token exchange)
