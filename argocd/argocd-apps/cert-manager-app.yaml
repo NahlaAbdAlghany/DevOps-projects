@@ -39,7 +39,8 @@ spec:
         volumeMounts:
           - name: gcp-wif
             mountPath: /var/secrets/gcp
-            readOnly: true
+            readOnly: true            
+                  
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
