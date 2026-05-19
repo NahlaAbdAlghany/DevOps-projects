@@ -1,3 +1,33 @@
+# ─── Launch Template ─────────────────────────────────────────────────────────
+# Shared by both node groups. Enforces IMDSv2 with hop_limit=2 so that
+# containers running on the node can reach the metadata service (the default
+# hop_limit=1 drops the request after the first IP hop, breaking IRSA inside
+# pods). remote_access is replaced by key_name here because the two blocks
+# are mutually exclusive on EKS managed node groups.
+resource "aws_launch_template" "eks_nodes" {
+  name_prefix = "${var.cluster_name}-nodes-"
+
+  key_name = "eks-cluster"
+
+  # When vpc_security_group_ids is set in a launch template, AWS does NOT
+  # automatically attach the EKS cluster security group — it must be listed
+  # explicitly here alongside any additional groups (e.g. the SSH SG).
+  vpc_security_group_ids = [
+    aws_eks_cluster.cluster.vpc_config[0].cluster_security_group_id,
+    var.node_ssh_security_group_id,
+  ]
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required" # IMDSv2 only — blocks unauthenticated v1 calls
+    http_put_response_hop_limit = 2          # allows one container-to-host hop
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # ─── General Worker Node Group ───────────────────────────────────────────────
 resource "aws_eks_node_group" "nodes" {
   cluster_name    = var.cluster_name
@@ -16,11 +46,9 @@ resource "aws_eks_node_group" "nodes" {
   capacity_type  = var.capacity_type
   instance_types = var.instance_types
 
-  # Enables SSH access to nodes for debugging.
-  # source_security_group_ids restricts which hosts can initiate SSH connections.
-  remote_access {
-    ec2_ssh_key               = "eks-cluster"
-    source_security_group_ids = [var.node_ssh_security_group_id]
+  launch_template {
+    id      = aws_launch_template.eks_nodes.id
+    version = aws_launch_template.eks_nodes.latest_version
   }
 
   # Wait for the cluster and all node role policies to be fully ready before
@@ -31,6 +59,7 @@ resource "aws_eks_node_group" "nodes" {
     aws_iam_role_policy_attachment.node_worker_policy,
     aws_iam_role_policy_attachment.node_cni_policy,
     aws_iam_role_policy_attachment.node_ecr_policy,
+    aws_launch_template.eks_nodes,
   ]
 }
 
@@ -65,9 +94,9 @@ resource "aws_eks_node_group" "argocd" {
     effect = "NO_SCHEDULE"
   }
 
-  remote_access {
-    ec2_ssh_key               = "eks-cluster"
-    source_security_group_ids = [var.node_ssh_security_group_id]
+  launch_template {
+    id      = aws_launch_template.eks_nodes.id
+    version = aws_launch_template.eks_nodes.latest_version
   }
 
   depends_on = [
@@ -75,5 +104,6 @@ resource "aws_eks_node_group" "argocd" {
     aws_iam_role_policy_attachment.node_worker_policy,
     aws_iam_role_policy_attachment.node_cni_policy,
     aws_iam_role_policy_attachment.node_ecr_policy,
+    aws_launch_template.eks_nodes,
   ]
 }

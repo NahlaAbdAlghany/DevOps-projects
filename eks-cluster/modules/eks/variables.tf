@@ -10,7 +10,7 @@ variable "cluster_name" {
 }
 
 variable "node_ssh_security_group_id" {
-  description = "Security group ID that is allowed to SSH into worker nodes"
+  description = "Security group ID attached to worker nodes to allow SSH from ssh_cidr"
   type        = string
 }
 

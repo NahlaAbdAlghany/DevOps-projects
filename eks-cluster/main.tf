@@ -19,7 +19,7 @@ module "eks" {
   # Subnets where nodes and the control plane ENIs will be placed
   subnet_ids = module.vpc.public_subnet_ids
 
-  # Security group that allows SSH into nodes (created by vpc module)
+  # Security group attached to nodes — allows SSH from ssh_cidr (defined in vpc module)
   node_ssh_security_group_id = module.vpc.node_ssh_sg_id
 
   # Worker node group sizing
